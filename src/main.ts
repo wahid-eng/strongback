@@ -8,6 +8,7 @@ async function bootstrap() {
   const configService = new ConfigService(app);
   const port = configService.get<number>('PORT', 8000);
   app.useGlobalPipes(new ValidationPipe());
+  app.setGlobalPrefix('api');
   await app.listen(port, async () =>
     console.log('Application listening on', await app.getUrl()),
   );
