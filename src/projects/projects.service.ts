@@ -55,7 +55,7 @@ export class ProjectsService {
       throw new BadRequestException('Project ID is invalid');
     }
 
-    const project = this.projectModel.findById(id);
+    const project = await this.projectModel.findById(id);
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }
