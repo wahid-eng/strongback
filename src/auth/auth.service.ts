@@ -44,7 +44,7 @@ export class AuthService {
   }
 
   private async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findOne(email);
+    const user = await this.userService.findByEmail(email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);

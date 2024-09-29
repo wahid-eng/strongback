@@ -16,7 +16,7 @@ export class UsersService {
     email: string,
     password: string,
   ): Promise<User> {
-    const existingUser = await this.userModel.findOne({ email });
+    const existingUser = await this.userModel.findOne({ email }).exec();
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -25,12 +25,16 @@ export class UsersService {
     return user.save();
   }
 
-  async findOne(email: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | undefined> {
     const user = this.userModel.findOne({ email }).exec();
     if (!user) {
       throw new NotFoundException('User with this email does not exists');
     }
 
     return user;
+  }
+
+  async findByIds(ids: string[]): Promise<User[]> {
+    return this.userModel.find({ _id: { $in: ids } }).exec();
   }
 }
