@@ -25,7 +25,7 @@ export class UsersService {
     return user.save();
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findOne(email: string): Promise<User | undefined> {
     const user = this.userModel.findOne({ email }).exec();
     if (!user) {
       throw new NotFoundException('User with this email does not exists');

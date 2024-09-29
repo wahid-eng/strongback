@@ -5,6 +5,7 @@ import { LoginUserDto } from './dtos/login-user.dto';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { AuthResponseDto } from './dtos/auth-response.dto';
+import { AuthToken } from './dtos/auth-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,20 +17,34 @@ export class AuthService {
   async register(registerUserDto: RegisterUserDto): Promise<AuthResponseDto> {
     const { name, email, password } = registerUserDto;
     const user = await this.userService.createUser(name, email, password);
-    const response: AuthResponseDto = { _id: user._id.toString(), name, email };
+    const response: AuthResponseDto = {
+      message: 'Register success!',
+      data: { user: { _id: user._id.toString(), name, email } },
+    };
     return response;
   }
 
   async login(loginUserDto: LoginUserDto): Promise<AuthResponseDto> {
     const { email, password } = loginUserDto;
     const user = await this.validateUser(email, password);
-    const accessToken = await this.jwtService.signAsync({ _id: user._id });
-    const response: AuthResponseDto = { _id: user._id, email, accessToken };
+    const payload: AuthToken = { sub: user._id.toString(), email };
+    const accessToken = await this.jwtService.signAsync(payload);
+    const response: AuthResponseDto = {
+      message: 'Login success!',
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email,
+        },
+        accessToken,
+      },
+    };
     return response;
   }
 
   private async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findByEmail(email);
+    const user = await this.userService.findOne(email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
