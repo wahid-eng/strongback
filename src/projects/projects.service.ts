@@ -39,7 +39,7 @@ export class ProjectsService {
       throw new BadRequestException('Project ID is invalid.');
     }
 
-    const project = await this.projectModel.findById(id);
+    const project = await this.projectModel.findById(id).exec();
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }
@@ -55,20 +55,27 @@ export class ProjectsService {
       throw new BadRequestException('Project ID is invalid');
     }
 
-    const project = await this.projectModel.findById(id);
+    const project = await this.projectModel.findById(id).exec();
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }
 
-    if (updateProjectDto.users?.length) {
-      await this.validateUserExistace(updateProjectDto.users);
+    const { name, description, users } = updateProjectDto;
+
+    if (users?.length) {
+      await this.validateUserExistace(users);
     }
 
-    const updatedProject = await this.projectModel.findByIdAndUpdate(
-      id,
-      updateProjectDto,
-      { new: true, runValidators: true },
-    );
+    const updatedProject = await this.projectModel
+      .findByIdAndUpdate(
+        id,
+        { name, description, users },
+        {
+          new: true,
+          runValidators: true,
+        },
+      )
+      .exec();
     return updatedProject;
   }
 
@@ -77,7 +84,7 @@ export class ProjectsService {
       throw new BadRequestException('Project ID is invalid');
     }
 
-    const project = await this.projectModel.findById(id);
+    const project = await this.projectModel.findById(id).exec();
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }

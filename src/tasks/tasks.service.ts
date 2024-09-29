@@ -37,8 +37,7 @@ export class TasksService {
       user,
     });
 
-    await task.save();
-    return task;
+    return task.save();
   }
 
   async findOne(id: string): Promise<Task> {
@@ -46,7 +45,7 @@ export class TasksService {
       throw new BadRequestException('Task ID is invalid.');
     }
 
-    const task = await this.taskModel.findById(id);
+    const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new BadRequestException(`Task with ID ${id} not found.`);
     }
@@ -59,21 +58,26 @@ export class TasksService {
       throw new BadRequestException('Task ID is invalid');
     }
 
-    const task = await this.taskModel.findById(id);
+    const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new BadRequestException(`Task with ID ${id} not found.`);
     }
 
+    const { name, description, status, deadline, project, user } =
+      updateTaskDto;
+
     await this.validateUserAndProjectExistace({
-      userId: updateTaskDto.user,
-      projectId: updateTaskDto.project,
+      userId: user,
+      projectId: project,
     });
 
-    const updatedTask = await this.taskModel.findByIdAndUpdate(
-      id,
-      updateTaskDto,
-      { new: true, runValidators: true },
-    );
+    const updatedTask = await this.taskModel
+      .findByIdAndUpdate(
+        id,
+        { name, description, status, deadline, project, user },
+        { new: true, runValidators: true },
+      )
+      .exec();
     return updatedTask;
   }
 
@@ -82,7 +86,7 @@ export class TasksService {
       throw new BadRequestException('Task ID is invalid');
     }
 
-    const task = await this.taskModel.findById(id);
+    const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new BadRequestException(`Task with ID ${id} not found.`);
     }

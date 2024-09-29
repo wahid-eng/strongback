@@ -1,8 +1,15 @@
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { TaskStatus } from 'src/shared/interfaces/task-status.interface';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
+import { TaskStatus } from '../schemas/task.schema';
 
 export class CreateTaskDto {
   @IsString()
+  @IsNotEmpty()
   @MinLength(3)
   name: string;
 
@@ -16,12 +23,15 @@ export class CreateTaskDto {
   status: string;
 
   @IsOptional()
+  @IsNotEmpty()
   @IsString()
   deadline: Date;
 
+  @IsNotEmpty()
   @IsString()
   project: string;
 
+  @IsNotEmpty()
   @IsString()
   user: string;
 }

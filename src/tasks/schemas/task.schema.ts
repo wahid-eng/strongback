@@ -1,8 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Project } from 'src/projects/schemas/project.schema';
-import { TaskStatus } from 'src/shared/interfaces/task-status.interface';
 import { User } from 'src/users/schemas/user.schema';
+
+export enum TaskStatus {
+  BACKLOG = 'BACKLOG',
+  TODO = 'TODO',
+  IN_PROGRESS = 'IN_PROGRESS',
+  IN_VERIFICATION = 'IN_VERIFICATION',
+  COMPLETED = 'COMPLETED',
+}
 
 @Schema({ timestamps: true })
 export class Task extends Document {
