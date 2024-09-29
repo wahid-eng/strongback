@@ -94,7 +94,7 @@ export class TasksService {
     return task.deleteOne();
   }
 
-  async validateUserAndProjectExistace({
+  private async validateUserAndProjectExistace({
     userId,
     projectId,
   }: {

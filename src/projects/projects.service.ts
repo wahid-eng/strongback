@@ -92,7 +92,7 @@ export class ProjectsService {
     return project.deleteOne();
   }
 
-  async validateUserExistace(users: string[]): Promise<any> {
+  private async validateUserExistace(users: string[]): Promise<any> {
     const invalidIds = users.filter(
       (userId) => !Types.ObjectId.isValid(userId),
     );
