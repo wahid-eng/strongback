@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsMongoId,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -11,7 +12,6 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateTaskDto {
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
   @MinLength(3)
   name: string;
 
@@ -23,7 +23,6 @@ export class CreateTaskDto {
   @ApiProperty({ enum: TaskStatus })
   @IsOptional()
   @IsEnum(TaskStatus)
-  @IsString()
   status: string;
 
   @ApiProperty()
@@ -33,12 +32,6 @@ export class CreateTaskDto {
   deadline: Date;
 
   @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
+  @IsMongoId()
   project: string;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  user: string;
 }

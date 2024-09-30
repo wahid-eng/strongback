@@ -6,16 +6,18 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
+import { RegisterUserDto } from 'src/auth/dtos/register-user.dto';
+import { Task } from 'src/tasks/schemas/task.schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Task.name) private taskModel: Model<Task>,
+  ) {}
 
-  async createUser(
-    name: string,
-    email: string,
-    password: string,
-  ): Promise<User> {
+  async create(registerUserDto: RegisterUserDto): Promise<User> {
+    const { name, email, password } = registerUserDto;
     const existingUser = await this.userModel.findOne({ email }).exec();
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
@@ -34,7 +36,25 @@ export class UsersService {
     return user;
   }
 
-  async findByIds(ids: string[]): Promise<User[]> {
-    return this.userModel.find({ _id: { $in: ids } }).exec();
+  async findById(id: string): Promise<User | undefined> {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException('User with this id does not exists');
+    }
+
+    return user;
+  }
+
+  async getProjectsByUserId(id: string) {
+    const response = await this.userModel
+      .findById(id)
+      .populate({ path: 'projects', select: '-users' })
+      .exec();
+    return response.projects;
+  }
+
+  async getTasksByUserId(id: string) {
+    const response = await this.userModel.findById(id).exec();
+    return response;
   }
 }

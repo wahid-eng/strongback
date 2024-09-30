@@ -1,18 +1,18 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ProjectsService } from 'src/projects/projects.service';
 import { Task } from './schemas/task.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { UsersService } from 'src/users/users.service';
+import { Model } from 'mongoose';
 import { CreateTaskDto } from './dtos/create-task.dto';
 import { UpdateTaskDto } from './dtos/update-task.dto';
+import { Project } from 'src/projects/schemas/project.schema';
+import { User } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectModel(Task.name) private taskModel: Model<Task>,
-    private readonly projectService: ProjectsService,
-    private readonly userService: UsersService,
+    @InjectModel(Project.name) private projectModel: Model<Project>,
+    @InjectModel(User.name) private userModel: Model<User>,
   ) {}
 
   async findAll(): Promise<Task[]> {
@@ -20,13 +20,12 @@ export class TasksService {
   }
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    const { name, description, status, deadline, project, user } =
-      createTaskDto;
+    const { name, description, status, deadline, project } = createTaskDto;
 
-    await this.validateUserAndProjectExistace({
-      userId: user,
-      projectId: project,
-    });
+    const isValidProject = await this.projectModel.findById(project).exec();
+    if (!isValidProject) {
+      throw new BadRequestException(`Project with ID ${project} not found.`);
+    }
 
     const task = new this.taskModel({
       name,
@@ -34,17 +33,20 @@ export class TasksService {
       status,
       deadline,
       project,
-      user,
     });
 
-    return task.save();
+    await task.save();
+
+    await this.projectModel.findByIdAndUpdate(
+      project,
+      { $addToSet: { tasks: task._id } },
+      { runValidators: true },
+    );
+
+    return task;
   }
 
   async findOne(id: string): Promise<Task> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Task ID is invalid.');
-    }
-
     const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new BadRequestException(`Task with ID ${id} not found.`);
@@ -54,80 +56,26 @@ export class TasksService {
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Task ID is invalid');
-    }
+    const { name, description, status, deadline, project } = updateTaskDto;
 
-    const task = await this.taskModel.findById(id).exec();
-    if (!task) {
-      throw new BadRequestException(`Task with ID ${id} not found.`);
-    }
-
-    const { name, description, status, deadline, project, user } =
-      updateTaskDto;
-
-    await this.validateUserAndProjectExistace({
-      userId: user,
-      projectId: project,
-    });
-
-    const updatedTask = await this.taskModel
+    const task = await this.taskModel
       .findByIdAndUpdate(
         id,
-        { name, description, status, deadline, project, user },
+        { name, description, status, deadline, project },
         { new: true, runValidators: true },
       )
       .exec();
-    return updatedTask;
-  }
-
-  async delete(id: string): Promise<any> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Task ID is invalid');
-    }
-
-    const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new BadRequestException(`Task with ID ${id} not found.`);
     }
-
-    return task.deleteOne();
+    return task;
   }
 
-  private async validateUserAndProjectExistace({
-    userId,
-    projectId,
-  }: {
-    userId?: string;
-    projectId?: string;
-  }): Promise<any> {
-    if (userId?.length) {
-      if (!Types.ObjectId.isValid(userId)) {
-        throw new BadRequestException(
-          'Request contains invalid user ID: ' + userId,
-        );
-      }
-
-      const user = await this.userService.findByIds([userId]);
-      if (user.length === 0) {
-        throw new BadRequestException(
-          'Request contains invalid user ID: ' + userId,
-        );
-      }
+  async delete(id: string): Promise<any> {
+    const task = await this.taskModel.findByIdAndDelete(id).exec();
+    if (!task) {
+      throw new BadRequestException(`Task with ID ${id} not found.`);
     }
-
-    if (projectId?.length) {
-      if (!Types.ObjectId.isValid(projectId)) {
-        throw new BadRequestException(
-          'Request contains invalid project ID: ' + projectId,
-        );
-      }
-      const project = await this.projectService.findOne(projectId);
-      if (!project) {
-        throw new BadRequestException(
-          'Request contains invalid project ID: ' + projectId,
-        );
-      }
-    }
+    return task;
   }
 }

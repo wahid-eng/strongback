@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from 'src/users/schemas/user.schema';
 
 @Schema({ timestamps: true })
 export class Project extends Document {
@@ -10,8 +9,11 @@ export class Project extends Document {
   @Prop()
   description: string;
 
-  @Prop({ type: [Types.ObjectId], ref: User.name })
-  users: User[];
+  @Prop({ type: [Types.ObjectId], ref: 'Task' })
+  tasks: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'User' })
+  users: Types.ObjectId[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

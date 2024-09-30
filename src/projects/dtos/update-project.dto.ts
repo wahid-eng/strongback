@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateProjectDto {
   @ApiProperty()
@@ -19,11 +13,4 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   description: string;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsArray()
-  @IsNotEmpty({ each: true })
-  @IsString({ each: true })
-  users: string[];
 }

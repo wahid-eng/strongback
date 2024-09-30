@@ -28,7 +28,7 @@ export class Task extends Document {
   @Prop({ type: Types.ObjectId, ref: Project.name, required: true })
   project: Project;
 
-  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: User.name })
   user: User;
 }
 

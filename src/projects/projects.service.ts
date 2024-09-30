@@ -1,16 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Project } from './schemas/project.schema';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { CreateProjectDto } from './dtos/create-project.dto';
-import { UsersService } from 'src/users/users.service';
 import { UpdateProjectDto } from './dtos/update-project.dto';
+import { User } from 'src/users/schemas/user.schema';
+import { SyncUsersDto } from './dtos/sync-users.dto';
+import { Task } from 'src/tasks/schemas/task.schema';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<Project>,
-    private readonly userService: UsersService,
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Task.name) private taskModel: Model<Task>,
   ) {}
 
   async findAll(): Promise<Project[]> {
@@ -18,32 +21,23 @@ export class ProjectsService {
   }
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
-    const { name, description, users } = createProjectDto;
-
-    if (users?.length) {
-      await this.validateUserExistace(users);
-    }
+    const { name, description } = createProjectDto;
 
     const project = new this.projectModel({
       name,
       description,
-      users,
     });
 
-    await project.save();
+    project.save();
+
     return project;
   }
 
   async findOne(id: string): Promise<Project> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Project ID is invalid.');
-    }
-
     const project = await this.projectModel.findById(id).exec();
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }
-
     return project;
   }
 
@@ -51,68 +45,100 @@ export class ProjectsService {
     id: string,
     updateProjectDto: UpdateProjectDto,
   ): Promise<Project> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Project ID is invalid');
-    }
+    const { name, description } = updateProjectDto;
+    const project = await this.projectModel
+      .findByIdAndUpdate(
+        id,
+        { name, description },
+        { new: true, runValidators: true },
+      )
+      .exec();
 
-    const project = await this.projectModel.findById(id).exec();
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }
-
-    const { name, description, users } = updateProjectDto;
-
-    if (users?.length) {
-      await this.validateUserExistace(users);
-    }
-
-    const updatedProject = await this.projectModel
-      .findByIdAndUpdate(
-        id,
-        { name, description, users },
-        {
-          new: true,
-          runValidators: true,
-        },
-      )
-      .exec();
-    return updatedProject;
+    return project;
   }
 
   async delete(id: string): Promise<any> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Project ID is invalid');
-    }
-
-    const project = await this.projectModel.findById(id).exec();
+    const project = await this.projectModel.findByIdAndDelete(id).exec();
     if (!project) {
       throw new BadRequestException(`Project with ID ${id} not found.`);
     }
+    await this.userModel
+      .updateMany(
+        { _id: { $in: project.users } },
+        { $pull: { projects: project._id } },
+        { runValidators: true },
+      )
+      .exec();
 
-    return project.deleteOne();
+    const response = await this.taskModel.findOne({ project: project._id });
+
+    console.log(response);
+    return project;
   }
 
-  private async validateUserExistace(users: string[]): Promise<any> {
-    const invalidIds = users.filter(
-      (userId) => !Types.ObjectId.isValid(userId),
-    );
-    if (invalidIds.length) {
-      throw new BadRequestException(
-        'Request contains invalid user IDs: ' + invalidIds.join(', '),
-      );
+  async getUsersByProjectId(id: string) {
+    const response = await this.projectModel
+      .findById(id)
+      .select('-_id users')
+      .populate({ path: 'users', select: '-projects -password' })
+      .exec();
+    return response.users;
+  }
+
+  async assignUsers(
+    projectId: string,
+    syncUsersDto: SyncUsersDto,
+  ): Promise<any> {
+    const { users } = syncUsersDto;
+    const project = await this.projectModel
+      .findByIdAndUpdate(
+        projectId,
+        { $addToSet: { users: { $each: users } } },
+        { new: true, runValidators: true },
+      )
+      .exec();
+    if (!project) {
+      throw new BadRequestException(`Project with ID ${projectId} not found.`);
     }
 
-    const existingUsers = await this.userService.findByIds(users);
-    const existingUserIds = existingUsers.map((user) => user._id.toString());
+    await this.userModel
+      .updateMany(
+        { _id: { $in: users } },
+        { $addToSet: { projects: projectId } },
+        { runValidators: true },
+      )
+      .exec();
 
-    const nonExistingIds = users.filter(
-      (userId) => !existingUserIds.includes(userId),
-    );
+    return project;
+  }
 
-    if (nonExistingIds.length) {
-      throw new BadRequestException(
-        `Users with IDs not found: ${nonExistingIds.join(', ')}`,
-      );
+  async unassignUsers(
+    projectId: string,
+    syncUsersDto: SyncUsersDto,
+  ): Promise<any> {
+    const { users } = syncUsersDto;
+    const project = await this.projectModel
+      .findByIdAndUpdate(
+        projectId,
+        { $pull: { users: { $in: users } } },
+        { new: true, runValidators: true },
+      )
+      .exec();
+    if (!project) {
+      throw new BadRequestException(`Project with ID ${projectId} not found.`);
     }
+
+    await this.userModel
+      .updateMany(
+        { _id: { $in: users } },
+        { $pull: { projects: projectId } },
+        { runValidators: true },
+      )
+      .exec();
+
+    return project;
   }
 }

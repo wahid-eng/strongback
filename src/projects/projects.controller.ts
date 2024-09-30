@@ -13,6 +13,8 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { SyncUsersDto } from './dtos/sync-users.dto';
+import { MongoObjectIdPipe } from 'src/shared/pipes/mongo-object-id.pipe';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
@@ -31,13 +33,13 @@ export class ProjectsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', new MongoObjectIdPipe()) id: string) {
     return this.projectService.findOne(id);
   }
 
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', new MongoObjectIdPipe()) id: string,
     @Body() updateProjectDto: UpdateProjectDto,
   ) {
     return this.projectService.update(id, updateProjectDto);
@@ -45,7 +47,28 @@ export class ProjectsController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', new MongoObjectIdPipe()) id: string) {
     return this.projectService.delete(id);
+  }
+
+  @Patch(':id/assign-users')
+  async assignTo(
+    @Param('id', new MongoObjectIdPipe()) id: string,
+    @Body() syncUsersDto: SyncUsersDto,
+  ) {
+    return this.projectService.assignUsers(id, syncUsersDto);
+  }
+
+  @Patch(':id/unassign-users')
+  async unassignFrom(
+    @Param('id', new MongoObjectIdPipe()) id: string,
+    @Body() syncUsersDto: SyncUsersDto,
+  ) {
+    return this.projectService.unassignUsers(id, syncUsersDto);
+  }
+
+  @Get(':id/users')
+  async getUsersByProjectId(@Param('id', new MongoObjectIdPipe()) id: string) {
+    return this.projectService.getUsersByProjectId(id);
   }
 }

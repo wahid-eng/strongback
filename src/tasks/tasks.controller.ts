@@ -11,14 +11,16 @@ import {
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dtos/create-task.dto';
-import { UpdateTaskDto } from './dtos/update-task.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { MongoObjectIdPipe } from 'src/shared/pipes/mongo-object-id.pipe';
+import { UpdateTaskDto } from './dtos/update-task.dto';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly taskService: TasksService) {}
+
   @Get()
   async findAll() {
     return this.taskService.findAll();
@@ -30,13 +32,13 @@ export class TasksController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', new MongoObjectIdPipe()) id: string) {
     return this.taskService.findOne(id);
   }
 
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', new MongoObjectIdPipe()) id: string,
     @Body() updateProjectDto: UpdateTaskDto,
   ) {
     return this.taskService.update(id, updateProjectDto);
@@ -44,7 +46,7 @@ export class TasksController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', new MongoObjectIdPipe()) id: string) {
     return this.taskService.delete(id);
   }
 }

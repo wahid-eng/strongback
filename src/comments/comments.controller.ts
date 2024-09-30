@@ -13,6 +13,7 @@ import {
 import { CommentsService } from './comments.service';
 import { CommentDto } from './dtos/comment.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { MongoObjectIdPipe } from 'src/shared/pipes/mongo-object-id.pipe';
 
 @ApiTags('Comments')
 @ApiBearerAuth()
@@ -30,18 +31,21 @@ export class CommentsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', new MongoObjectIdPipe()) id: string) {
     return this.commentService.findOne(id);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() commentDto: CommentDto) {
+  async update(
+    @Param('id', new MongoObjectIdPipe()) id: string,
+    @Body() commentDto: CommentDto,
+  ) {
     return this.commentService.update(id, commentDto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', new MongoObjectIdPipe()) id: string) {
     return this.commentService.delete(id);
   }
 }

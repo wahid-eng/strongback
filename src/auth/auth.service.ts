@@ -15,11 +15,12 @@ export class AuthService {
   ) {}
 
   async register(registerUserDto: RegisterUserDto): Promise<AuthResponseDto> {
-    const { name, email, password } = registerUserDto;
-    const user = await this.userService.createUser(name, email, password);
+    const user = await this.userService.create(registerUserDto);
     const response: AuthResponseDto = {
       message: 'Register success!',
-      data: { user: { _id: user._id.toString(), name, email } },
+      data: {
+        user: { _id: user._id.toString(), name: user.name, email: user.email },
+      },
     };
     return response;
   }

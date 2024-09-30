@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsMongoId,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -12,7 +13,6 @@ export class UpdateTaskDto {
   @ApiProperty()
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(3)
   name: string;
 
@@ -24,7 +24,6 @@ export class UpdateTaskDto {
   @ApiProperty()
   @IsOptional()
   @IsEnum(TaskStatus)
-  @IsString()
   status: string;
 
   @ApiProperty()
@@ -35,13 +34,6 @@ export class UpdateTaskDto {
 
   @ApiProperty()
   @IsOptional()
-  @IsNotEmpty()
-  @IsString()
+  @IsMongoId()
   project: string;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsNotEmpty()
-  @IsString()
-  user: string;
 }
